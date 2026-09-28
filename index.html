@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="description" content="A1市街地グランプリ GOTSU を応援する、江津駅前の市街地コースを走るファミコン風ドットレースゲーム（非公式）。">
 <meta name="theme-color" content="#10142c">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
@@ -17,7 +17,7 @@
   --plate:#d9c68a; --plate-d:#9c8448; --pad:#8c1e1a; --s:2;
   color-scheme:dark;
 }
-html{height:100%;box-sizing:border-box;background:var(--bg)}
+html{height:100%;box-sizing:border-box;background:var(--bg);touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
 body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);
@@ -27,7 +27,7 @@ button,input{font:inherit;color:inherit}
 #app{position:relative;height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding-inline:16px}
 
 /* ---- stage ---- */
-#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding-block:8px}
+#stage{touch-action:none;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding-block:8px}
 #screen{position:relative;width:384px;height:512px;box-shadow:0 0 0 3px #000,0 0 0 6px var(--gold)}
 #cv{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;background:#000}
 #hud{position:absolute;inset:0;pointer-events:none;font-size:calc(var(--s)*7px);line-height:1.1;text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000}
@@ -524,6 +524,16 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=KMAP
   if(e.code==='Escape'||e.code==='KeyP'){if(state==='race'&&!paused)pause();else if(paused)resume();}});
 addEventListener('keyup',e=>{const k=KMAP[e.code];if(k){keys[k]=0;sync();}});
 addEventListener('blur',()=>{keys.L=keys.R=keys.A=keys.B=0;ptr.clear();sync();});
+
+/* ---- スマホでの意図しない拡大をふせぐ（ダブルタップ・ピンチ） ---- */
+(()=>{
+  const isField=t=>t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA');
+  ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+  document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+  let lastTouch=0;
+  document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouch<350&&!isField(e.target)&&!e.target.closest('a'))e.preventDefault();lastTouch=now;},{passive:false});
+  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+})();
 
 /* ================= race ================= */
 let state='title',paused=false,race=null,selIdx=store.get('gotsu-chara',0)|0,autoAcc=!!store.get('gotsu-auto',false),particles=[];

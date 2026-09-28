@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="A1市街地グランプリ GOTSU を応援する、江津駅前の市街地コースを走るファミコン風ドットレースゲーム（非公式）。">
+<meta name="theme-color" content="#10142c">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>江津ドットGP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#10142c; --panel:#1b2150; --panel2:#2a3378; --ink:#f8f4e8; --dim:#a0a8d8;
+  --kawara:#c8452c; --kawara-d:#7c2414; --gold:#fcc43c; --sea:#3c8cfc; --green:#58c048;
+  --plate:#d9c68a; --plate-d:#9c8448; --pad:#8c1e1a; --s:2;
+  color-scheme:dark;
+}
+html{height:100%;box-sizing:border-box;background:var(--bg)}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:"DotGothic16",ui-monospace,"Hiragino Sans","Yu Gothic",monospace;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+#app{position:relative;height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding-inline:16px}
+
+/* ---- stage ---- */
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding-block:8px}
+#screen{position:relative;width:384px;height:512px;box-shadow:0 0 0 3px #000,0 0 0 6px var(--gold)}
+#cv{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;background:#000}
+#hud{position:absolute;inset:0;pointer-events:none;font-size:calc(var(--s)*7px);line-height:1.1;text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000}
+#hud .tl{position:absolute;left:calc(var(--s)*4px);top:calc(var(--s)*3px)}
+#hud .tr{position:absolute;right:calc(var(--s)*4px);top:calc(var(--s)*3px);text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:calc(var(--s)*2px)}
+#hud .bl{position:absolute;left:calc(var(--s)*4px);bottom:calc(var(--s)*3px)}
+#hPos{font-size:calc(var(--s)*16px);color:var(--gold)}
+#hPos small{font-size:.5em;color:var(--ink)}
+#hTime{font-variant-numeric:tabular-nums}
+#hLast{font-size:.8em;color:var(--dim);font-variant-numeric:tabular-nums}
+#mini{width:calc(var(--s)*48px);height:calc(var(--s)*56px);image-rendering:pixelated;border:1px solid rgba(248,244,232,.4)}
+#pauseBtn{pointer-events:auto;position:absolute;left:50%;top:calc(var(--s)*3px);transform:translateX(-50%);background:rgba(16,20,44,.7);border:2px solid var(--ink);font-size:calc(var(--s)*6px);padding:2px 8px;cursor:pointer}
+#flash{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:calc(var(--s)*22px);color:var(--gold);text-shadow:3px 3px 0 var(--kawara-d),-2px -2px 0 #000;pointer-events:none;letter-spacing:.04em}
+#flash.small{font-size:calc(var(--s)*13px)}
+
+/* ---- famicom pad ---- */
+#pad{flex:none;height:clamp(132px,24vh,176px);margin-bottom:8px;background:var(--plate);border:4px solid var(--pad);box-shadow:inset 0 0 0 3px var(--plate-d);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;touch-action:none}
+#dpad{position:relative;width:132px;height:100%;max-height:132px;touch-action:none;cursor:pointer}
+#dpad::before{content:"";position:absolute;left:50%;top:6%;bottom:6%;width:40px;transform:translateX(-50%);background:#1c1c20;border-radius:4px}
+#dpad::after{content:"";position:absolute;top:50%;left:0;right:0;height:48px;transform:translateY(-50%);background:#1c1c20;border-radius:4px}
+#dpad span{position:absolute;top:50%;transform:translateY(-50%);z-index:1;color:#6c6c74;font-size:20px;width:48px;text-align:center}
+#dpad .l{left:0}#dpad .r{right:0}
+#dpad span.on{color:var(--gold)}
+.mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--pad);font-size:11px;text-align:center;letter-spacing:.08em}
+.mid b{font-weight:400;font-size:13px;background:var(--pad);color:var(--plate);padding:1px 6px}
+#ab{display:flex;gap:14px;align-items:center;touch-action:none;cursor:pointer}
+#ab div{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--pad);font-size:11px}
+#ab i{display:block;width:60px;height:60px;border-radius:50%;background:#c8302c;box-shadow:0 0 0 4px #1c1c20,0 5px 0 4px #1c1c20;font-style:normal;color:#f8d0c8;font-size:20px;line-height:60px;text-align:center}
+#ab i.on{transform:translateY(3px);box-shadow:0 0 0 4px #1c1c20,0 2px 0 4px #1c1c20;background:#e8483c}
+
+/* ---- screens ---- */
+.screen{position:absolute;inset:0;z-index:5;overflow-y:auto;background:rgba(16,20,44,.9);display:flex;flex-direction:column;align-items:center;padding:28px 16px 32px;gap:14px;text-align:center;-webkit-user-select:text;user-select:text}
+.screen.see{background:linear-gradient(rgba(16,20,44,.55),rgba(16,20,44,.92) 60%)}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--dim)}
+h1{margin:0;font-size:clamp(40px,12vw,56px);font-weight:400;line-height:1;color:var(--gold);text-shadow:4px 4px 0 var(--kawara),8px 8px 0 #000;text-wrap:balance}
+h1 small{display:block;font-size:.36em;color:var(--ink);text-shadow:2px 2px 0 #000;margin-top:10px;letter-spacing:.2em}
+h2{margin:0;font-weight:400;font-size:24px;color:var(--gold);text-shadow:3px 3px 0 var(--kawara-d);text-wrap:balance}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;text-align:left;font-size:14px;background:rgba(0,0,0,.35);padding:10px 14px;border:2px solid var(--panel2)}
+.facts dt{color:var(--dim)}.facts dd{margin:0}
+.fine{font-size:11px;color:var(--dim);max-width:34em;line-height:1.6}
+.fine a{color:var(--gold)}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn{font-size:18px;background:var(--kawara);border:0;padding:12px 22px;cursor:pointer;box-shadow:0 5px 0 var(--kawara-d),inset 0 0 0 2px var(--ink);letter-spacing:.06em}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--kawara-d),inset 0 0 0 2px var(--ink)}
+.btn.alt{background:var(--panel2);box-shadow:0 5px 0 #070918,inset 0 0 0 2px var(--dim)}
+.btn.alt:active{box-shadow:0 1px 0 #070918,inset 0 0 0 2px var(--dim)}
+.btn:disabled{opacity:.45;cursor:default;transform:none}
+.btn:focus-visible,.card:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.link{background:none;border:0;color:var(--dim);text-decoration:underline;cursor:pointer;font-size:13px}
+
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:420px}
+.card{background:var(--panel);border:3px solid var(--panel2);padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;text-align:center}
+.card[aria-pressed="true"]{border-color:var(--gold);background:var(--panel2)}
+.card[aria-pressed="true"] canvas{animation:hop .5s steps(2) infinite}
+@keyframes hop{50%{transform:translateY(-4px)}}
+.card canvas{width:64px;height:64px;image-rendering:pixelated}
+.card .nm{font-size:17px}
+.card .tt{font-size:11px;color:var(--dim)}
+.stats{font-size:11px;display:grid;grid-template-columns:auto auto;gap:0 6px;text-align:left;margin-top:2px}
+.stats span:nth-child(even){color:var(--gold);letter-spacing:-.05em}
+#selDesc{max-width:420px;font-size:14px;line-height:1.7;min-height:3.4em;background:rgba(0,0,0,.35);padding:8px 12px;border-left:4px solid var(--kawara);text-align:left;width:100%}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--kawara)}
+
+.place{font-size:64px;line-height:1;color:var(--gold);text-shadow:4px 4px 0 var(--kawara)}
+.place small{font-size:.4em;color:var(--ink)}
+.res{display:grid;grid-template-columns:auto auto;gap:4px 16px;font-size:16px;text-align:left;font-variant-numeric:tabular-nums}
+.res dt{color:var(--dim)}.res dd{margin:0}
+#pbNote{color:var(--green);font-size:14px;min-height:1.2em}
+.send{width:100%;max-width:420px;background:var(--panel);border:2px solid var(--panel2);padding:12px;display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:left}
+.send label{font-size:13px;color:var(--dim)}
+.send .in{display:flex;gap:8px}
+.send input{flex:1;min-width:0;font-size:18px;background:#070918;border:2px solid var(--dim);padding:8px 10px;-webkit-user-select:text;user-select:text}
+.send .btn{font-size:15px;padding:8px 14px}
+.warn{font-size:12px;color:var(--gold);line-height:1.5}
+#sendMsg{font-size:13px;min-height:1.2em}
+
+.board{width:100%;max-width:420px;text-align:left}
+.board h3{margin:0 0 6px;font-weight:400;font-size:15px;color:var(--gold);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.board h3 span{font-size:11px;color:var(--dim)}
+.board ol{list-style:none;margin:0;padding:0;border-top:2px solid var(--panel2)}
+.board li{display:grid;grid-template-columns:2.4em 20px 1fr auto;gap:8px;align-items:center;padding:5px 4px;border-bottom:1px dashed var(--panel2);font-size:15px}
+.board li img{width:20px;height:20px;image-rendering:pixelated}
+.board li .t{font-variant-numeric:tabular-nums}
+.board li .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board li.me{color:var(--gold);background:rgba(252,196,60,.08)}
+.board li:nth-child(1) .r{color:var(--gold)}
+.board .empty{font-size:13px;color:var(--dim);padding:10px 4px}
+.board .note{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.5}
+@media (prefers-reduced-motion:reduce){.card[aria-pressed="true"] canvas{animation:none}}
+</style>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="screen">
+      <canvas id="cv" width="192" height="256" aria-label="レース画面"></canvas>
+      <div id="hud" hidden>
+        <div class="tl"><div id="hLap">LAP 1/3</div><div id="hPos">4<small>位</small></div></div>
+        <div class="tr"><div id="hTime">0:00.00</div><div id="hLast"></div><canvas id="mini" width="48" height="56"></canvas></div>
+        <div class="bl" id="hSpd">0 km/h</div>
+        <button id="pauseBtn" type="button" aria-label="一時停止">II</button>
+      </div>
+      <div id="flash" hidden></div>
+    </div>
+  </div>
+  <div id="pad">
+    <div id="dpad" aria-label="左右ハンドル"><span class="l" id="kL">◀</span><span class="r" id="kR">▶</span></div>
+    <div class="mid"><b>GOTSU</b><span style="white-space:nowrap">PC: ←→ Z X</span></div>
+    <div id="ab"><div><i id="kB">B</i>ブレーキ</div><div><i id="kA">A</i>アクセル</div></div>
+  </div>
+
+  <!-- title -->
+  <section class="screen see" id="scTitle">
+    <div class="eyebrow">A1市街地グランプリ GOTSU2026 おうえんゲーム</div>
+    <h1>江津ドットGP<small>GOTSU DOT GRAND PRIX</small></h1>
+    <dl class="facts">
+      <dt>決勝</dt><dd>2026年12月13日（日）</dd>
+      <dt>コース</dt><dd>JR江津駅前 市街地特設コース</dd>
+      <dt>道路</dt><dd>国道9号・県道江津港線・駅前の市道</dd>
+      <dt>ゲーム</dt><dd>1周約778m・6コーナー・左回り 3周</dd>
+    </dl>
+    <div class="row">
+      <button class="btn" id="goSelect" type="button">スタート</button>
+      <button class="btn alt" id="goRank" type="button">ランキング</button>
+    </div>
+    <button class="link" id="soundBtn" type="button">サウンド：ON</button>
+    <p class="fine">非公式の応援ゲームです。コースは2020年大会の市街地コース（パレットごうつ駐車場前スタート）を地図データから再現しました。2026年大会のコースは調整中のため、実際とは異なる場合があります。地図データ © OpenStreetMap contributors。大会情報は <a href="https://a1citygp.com/" target="_blank" rel="noopener">公式サイト</a> へ。</p>
+  </section>
+
+  <!-- select -->
+  <section class="screen" id="scSelect" hidden>
+    <h2>ドライバーをえらぼう</h2>
+    <div class="cards" id="cards"></div>
+    <p id="selDesc"></p>
+    <label class="check"><input type="checkbox" id="autoAcc"> オートアクセル（Aボタンをおさなくても走る）</label>
+    <div class="row">
+      <button class="btn" id="goRace" type="button">このドライバーで出走！</button>
+    </div>
+    <button class="link" id="backTitle1" type="button">タイトルにもどる</button>
+  </section>
+
+  <!-- result -->
+  <section class="screen" id="scResult" hidden>
+    <div class="eyebrow">FINISH ─ JR江津駅前 市街地特設コース</div>
+    <div class="place" id="rPlace">1<small>位</small></div>
+    <dl class="res">
+      <dt>ドライバー</dt><dd id="rChara">レン</dd>
+      <dt>タイム</dt><dd id="rTime">0:00.00</dd>
+      <dt>ベストラップ</dt><dd id="rLap">0:00.00</dd>
+    </dl>
+    <div id="pbNote"></div>
+    <form class="send" id="sendForm" autocomplete="off">
+      <label for="nick">ニックネーム（10文字まで）</label>
+      <div class="in"><input id="nick" maxlength="10" placeholder="例：ごうつ太郎" enterkeyhint="send"><button class="btn" id="sendBtn" type="submit">記録をのせる</button></div>
+      <div class="warn">本名や学校名は入れないでね。ニックネームでOK！</div>
+      <div id="sendMsg" role="status"></div>
+    </form>
+    <div class="board"><h3>みんなの記録 <span class="bmode"></span></h3><ol class="blist"></ol><div class="note bnote"></div></div>
+    <div class="row">
+      <button class="btn" id="again" type="button">もう一度</button>
+      <button class="btn alt" id="toSelect" type="button">ドライバーをかえる</button>
+    </div>
+  </section>
+
+  <!-- ranking -->
+  <section class="screen" id="scRank" hidden>
+    <h2>ランキング</h2>
+    <div class="board"><h3>みんなの記録 <span class="bmode"></span></h3><ol class="blist"></ol><div class="note bnote"></div></div>
+    <button class="btn alt" id="backTitle2" type="button">タイトルにもどる</button>
+  </section>
+
+  <!-- pause -->
+  <section class="screen" id="scPause" hidden>
+    <h2>PAUSE</h2>
+    <div class="row">
+      <button class="btn" id="resume" type="button">つづける</button>
+      <button class="btn alt" id="retire" type="button">リタイア</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const VW=192,VH=256,WW=1050,WH=1075,LAPS=3,STEP=2,DT=1/120,TAU=Math.PI*2;
+const wrapA=a=>{while(a>Math.PI)a-=TAU;while(a<-Math.PI)a+=TAU;return a;};
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function rng(seed){return()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const fmt=ms=>{ms=Math.max(0,Math.round(ms));const m=Math.floor(ms/60000),s=Math.floor(ms/1000)%60,c=Math.floor(ms/10)%100;return m+':'+String(s).padStart(2,'0')+'.'+String(c).padStart(2,'0');};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+
+/* ================= characters ================= */
+const CHARAS=[
+ {id:'ren',name:'レン',title:'石州瓦レッド',type:'バランス型',S:3,A:3,C:3,body:'#c8452c',helm:'#f8f4e8',
+  desc:'江津の赤い瓦屋根みたいにアツいハート。どんなコーナーもそつなく走る、たよれるエース。'},
+ {id:'orochi',name:'オロチ',title:'石見神楽の大蛇',type:'最高速型',S:5,A:2,C:2,body:'#6a34a0',helm:'#fcc43c',
+  desc:'神楽の舞台から飛び出した大蛇。駅前の直線でぐんぐん伸びるけど、カーブは大回りに注意。'},
+ {id:'nami',name:'ナミ',title:'日本海サーファー',type:'加速型',S:2,A:5,C:2,body:'#2c6cd8',helm:'#f8f4e8',
+  desc:'波乗りできたえた反射神経。スタートダッシュとコーナーの立ち上がりが自慢。'},
+ {id:'midori',name:'ミドリ博士',title:'GXドクター',type:'コーナー型',S:2,A:2,C:5,body:'#3c9c3c',helm:'#f8f040',
+  desc:'e-fuelを研究するエコな博士。6つのコーナーでライバルを抜きさるテクニシャン。'}
+];
+CHARAS.forEach(c=>{c.vmax=100+c.S*4.5;c.acc=45+c.A*14;c.grip=1.6+c.C*0.26;});
+
+/* ---- pixel portraits 16x16 ---- */
+function portraitGrid(id){
+  const r=[
+    '....'+'k'.repeat(8)+'....',
+    '..kk'+'H'.repeat(8)+'kk..',
+    '.k'+'H'.repeat(12)+'k.',
+    '.kHww'+'H'.repeat(9)+'k.',
+    'kHHw'+'H'.repeat(11)+'k',
+    'k'+'H'.repeat(14)+'k',
+    'kHH'+'k'.repeat(10)+'HHk',
+    'kHk'+'ssssssssss'+'kHk',
+    'kHk'+'sEEssssEEs'+'kHk',
+    'kHk'+'ssssssssss'+'kHk',
+    '.kHk'+'sssMMsss'+'kHk.',
+    '..kk'+'ssssssss'+'kk..',
+    '...kkk'+'CCCC'+'kkk...',
+    '..k'+'S'.repeat(10)+'k..',
+    '.k'+'S'.repeat(12)+'k.',
+    'k'+'S'.repeat(14)+'k'].map(s=>s.split(''));
+  const set=(x,y,c)=>{if(r[y]&&r[y][x]!==undefined)r[y][x]=c;};
+  const base={k:'#1a1020',w:'#f8e0c8',E:'#1a1020',M:'#a83020',C:'#f8f4e8'};
+  let pal;
+  if(id==='ren'){
+    pal={...base,H:'#c8452c',P:'#8c2818',s:'#f8b888',S:'#c8452c',W:'#f8f4e8'};
+    for(let y=1;y<6;y++)for(let x=0;x<16;x++)if(r[y][x]==='H'&&(x+y*2)%4===0)set(x,y,'P');
+    set(7,14,'W');set(8,14,'W');set(7,15,'W');set(8,15,'W');
+  }else if(id==='orochi'){
+    pal={...base,H:'#2a6a3a',P:'#1a4a2a',G:'#fcc43c',s:'#d83828',E:'#fcc43c',M:'#f8f8f8',C:'#fcc43c',S:'#5a2a8a'};
+    for(let y=1;y<6;y++)for(let x=0;x<16;x++)if(r[y][x]==='H'&&(x+y)%3===0)set(x,y,'P');
+    set(3,0,'G');set(3,1,'G');set(12,0,'G');set(12,1,'G');set(2,0,'G');set(13,0,'G');
+    set(5,10,'M');set(10,10,'M');
+    for(let y=13;y<16;y++)for(let x=0;x<16;x++)if(r[y][x]==='S'&&x%3===0)set(x,y,'G');
+  }else if(id==='nami'){
+    pal={...base,H:'#3c8cfc',W:'#f8f4e8',s:'#d89060',S:'#2c6cd8',h:'#2a1a10'};
+    for(let x=0;x<16;x++)if(r[4][x]==='H'&&x%4<2)set(x,4,'W');
+    for(let x=0;x<16;x++)if(r[5][x]==='H'&&(x+2)%4<2)set(x,5,'W');
+    set(15,8,'h');set(15,9,'h');set(15,10,'h');set(14,11,'h');
+  }else{
+    pal={...base,H:'#48b048',Y:'#f8f040',s:'#f8c898',E:'#d8f0f8',B:'#d8d8d8',S:'#f8f4e8',C:'#48b048'};
+    set(7,2,'Y');set(8,2,'Y');set(8,3,'Y');set(7,3,'Y');set(8,1,'Y');
+    const g='kEEkkkkEEk';for(let i=0;i<10;i++)set(3+i,8,g[i]);
+    for(let x=4;x<12;x++){if(r[10][x]==='s')set(x,10,'B');if(r[11][x]==='s')set(x,11,'B');}
+    set(7,13,'C');set(8,13,'C');
+  }
+  return {grid:r,pal};
+}
+function paint(grid,pal){const h=grid.length,w=grid[0].length,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const ch=grid[y][x];if(ch==='.'||!pal[ch])continue;g.fillStyle=pal[ch];g.fillRect(x,y,1,1);}return c;}
+const PORTRAIT={},PORTRAIT_URL={};
+CHARAS.forEach(c=>{const p=portraitGrid(c.id);PORTRAIT[c.id]=paint(p.grid,p.pal);try{PORTRAIT_URL[c.id]=PORTRAIT[c.id].toDataURL();}catch(e){PORTRAIT_URL[c.id]='';}});
+
+/* ---- kart sprites (32 directions) ---- */
+const KART=['..kkkkkk..','.kBBBBBBk.','kTkBWWBkTk','kTkBBBBkTk','.kkBBBBkk.','..kBHHBk..','..kHHHHk..','..kBHHBk..',
+  '.kkBBBBkk.','kTkBBBBkTk','kTkBBBBkTk','kTkBBBBkTk','.kkEEEEkk.','..kkkkkk..'].map(s=>s.split(''));
+function rotSprites(base){
+  const w=base.width,h=base.height,src=base.getContext('2d').getImageData(0,0,w,h).data,spr=[],sh=[];
+  for(let d=0;d<32;d++){
+    const a=d/32*TAU,co=Math.cos(a),sn=Math.sin(a);
+    const c=document.createElement('canvas');c.width=c.height=18;const g=c.getContext('2d');const im=g.createImageData(18,18);
+    const c2=document.createElement('canvas');c2.width=c2.height=18;const g2=c2.getContext('2d');const im2=g2.createImageData(18,18);
+    for(let y=0;y<18;y++)for(let x=0;x<18;x++){
+      const dx=x+.5-9,dy=y+.5-9,sx=Math.floor(co*dx+sn*dy+w/2),sy=Math.floor(-sn*dx+co*dy+h/2);
+      if(sx<0||sy<0||sx>=w||sy>=h)continue;const s4=(sy*w+sx)*4;if(src[s4+3]<128)continue;
+      const di=(y*18+x)*4;im.data[di]=src[s4];im.data[di+1]=src[s4+1];im.data[di+2]=src[s4+2];im.data[di+3]=255;im2.data[di+3]=100;
+    }
+    g.putImageData(im,0,0);g2.putImageData(im2,0,0);spr.push(c);sh.push(c2);
+  }
+  return {spr,sh};
+}
+const SPR={};
+CHARAS.forEach(c=>{SPR[c.id]=rotSprites(paint(KART,{k:'#101018',B:c.body,T:'#262626',W:'#f8f4e8',H:c.helm,E:'#9090a0'}));});
+
+/* ================= track (2020大会コース / OpenStreetMap 実測, 1m = 2.5px) ================= */
+const S=2.5,OX=330,OY=290;
+const m2p=(x,y)=>[(x+OX)*S,(y+OY)*S];
+// [x(m 東+), y(m 南+), 道の半幅(m), 路面 a=アスファルト g=御影石, 区間]
+const COURSE=[
+  [-242,50,7,'a','r9'],[-234,45,7,'a','r9'],[-217,38,7,'a','r9'],[-200,33,7,'a','r9'],[-143,15,7,'a','r9'],[-120,7,7,'a','r9'],
+  [-66,-20,5.2,'g','sd'],[-86,-62,5.2,'g','sd'],[-96,-82,5.2,'g','sd'],
+  [0,-155,5.4,'a','kp'],[-38,-205,5.6,'a','kp'],[-60,-183,5.6,'a','kp'],[-123,-135,5.6,'a','kp'],[-142,-120,5.6,'a','kp'],[-166,-98,5.6,'a','kp'],
+  [-185,-82,5.6,'a','kp'],[-202,-67,5.6,'a','kp'],[-222,-44,5.6,'a','ak'],[-232,-23,5.6,'a','ak'],[-238,-3,5.6,'a','ak'],[-244,24,5.6,'a','ak'],[-246,40,5.6,'a','ak']];
+const P=(()=>{
+  const n=COURSE.length,V=COURSE.map(c=>{const [x,y]=m2p(c[0],c[1]);return{x,y,w:c[2]*S,s:c[3],sec:c[4]};}),raw=[];
+  for(let i=0;i<n;i++){
+    const A0=V[(i+n-1)%n],C=V[i],B0=V[(i+1)%n];
+    const lu=Math.hypot(A0.x-C.x,A0.y-C.y),lw=Math.hypot(B0.x-C.x,B0.y-C.y),R=Math.min(13*S,lu*.45,lw*.45);
+    const A=[C.x+(A0.x-C.x)/lu*R,C.y+(A0.y-C.y)/lu*R],B=[C.x+(B0.x-C.x)/lw*R,C.y+(B0.y-C.y)/lw*R];
+    for(let t=0;t<=10;t++){const s=t/10,m=1-s;raw.push({x:m*m*A[0]+2*m*s*C.x+s*s*B[0],y:m*m*A[1]+2*m*s*C.y+s*s*B[1],w:A0.w+(C.w-A0.w)*s,s:s<.5?A0.s:C.s,sec:s<.5?A0.sec:C.sec});}
+  }
+  const seg=[];let total=0;
+  for(let i=0;i<raw.length;i++){const a=raw[i],b=raw[(i+1)%raw.length],l=Math.hypot(b.x-a.x,b.y-a.y);seg.push(l);total+=l;}
+  const cnt=Math.round(total/STEP),st=total/cnt;let pts=[],si=0,acc=0;
+  for(let k=0;k<cnt;k++){const d=k*st;while(si<seg.length-1&&acc+seg[si]<d){acc+=seg[si];si++;}
+    const a=raw[si],b=raw[(si+1)%raw.length],t=seg[si]?(d-acc)/seg[si]:0;pts.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,w:a.w+(b.w-a.w)*t,s:a.s,sec:a.sec});}
+  const [sx,sy]=m2p(-82,-54);let bi=0,bd=1e9;pts.forEach((p,i)=>{const d=(p.x-sx)**2+(p.y-sy)**2;if(d<bd){bd=d;bi=i;}});
+  pts=pts.slice(bi).concat(pts.slice(0,bi));
+  const N=pts.length;
+  pts.forEach((p,i)=>{const a=pts[(i+N-1)%N],b=pts[(i+1)%N];p.h=Math.atan2(b.x-a.x,-(b.y-a.y));p.nx=Math.cos(p.h);p.ny=Math.sin(p.h);});
+  pts.forEach((p,i)=>{p.k=Math.abs(wrapA(pts[(i+3)%N].h-pts[(i+N-3)%N].h))/(6*STEP);});
+  pts.forEach((p,i)=>{let m=1e9;for(let j=0;j<36;j++){const kk=pts[(i+j)%N].k;if(kk>1e-3)m=Math.min(m,1/kk);}p.ra=m;});
+  return pts;
+})();
+const N=P.length,COURSE_LEN_M=Math.round(N*STEP/S);
+function nearest(x,y,g){let best=g,bd=1e12;for(let o=-32;o<=32;o++){const i=(g+o+N)%N,d=(P[i].x-x)**2+(P[i].y-y)**2;if(d<bd){bd=d;best=i;}}return [best,Math.sqrt(bd)];}
+const wallOf=i=>P[i].w-3;
+
+/* ================= world ================= */
+const world=document.createElement('canvas');world.width=WW;world.height=WH;
+const marks=document.createElement('canvas');marks.width=WW;marks.height=WH;const mg=marks.getContext('2d');
+const miniBase=document.createElement('canvas');miniBase.width=48;miniBase.height=56;
+const MB=(()=>{let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;P.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);});
+  const s=Math.min(42/(x1-x0),50/(y1-y0));return{s,ox:(48-(x1-x0)*s)/2-x0*s,oy:(56-(y1-y0)*s)/2-y0*s};})();
+const MS=MB.s,MOX=MB.ox,MOY=MB.oy;
+// OpenStreetMap より（m, 駅=原点）
+const SIDE_ROADS=[
+  [[-66,-20],[-57,-25],[25,-66],[54,-80],[125,-115],[182,-139],[273,-169]],
+  [[-242,50],[-249,57],[-256,68],[-263,87],[-269,126],[-272,148],[-278,167]],
+  [[0,-155],[45,-99],[54,-80]],[[-38,-205],[-13,-245],[18,-297]],[[-2,-160],[48,-198],[77,-228]],
+  [[-205,-33],[-197,-43],[-180,-58],[-158,-63],[-147,-69],[-103,-94]],[[-205,-33],[-148,-4],[-143,3],[-138,14]],
+  [[-205,-33],[-214,-36],[-222,-44]],[[-123,-135],[-103,-94],[-96,-82]],[[-222,-44],[-256,-63],[-294,-83],[-331,-113]],
+  [[-253,148],[-237,127],[-212,106],[-186,95],[-129,83],[-53,63],[11,37],[62,11]],[[-263,87],[-178,52],[-161,37],[-143,15]],
+  [[-318,108],[-263,87]],[[-331,-113],[-343,-102],[-347,-91],[-305,-44],[-302,25],[-347,69]]];
+const RAILS=[[[245,-100],[199,-81],[130,-49],[79,-28],[1,3],[-80,35],[-146,63],[-216,91],[-231,96],[-326,131],[-380,153]],
+  [[199,-81],[154,-53],[111,-32],[66,-12],[5,11],[-141,69],[-190,85],[-231,96]],[[-380,164],[-243,106],[-169,78]]];
+const PLATFORMS=[[[-73,35],[52,-15],[54,-10],[-10,15],[-71,39]],[[-97,28],[-96,31],[22,-15],[21,-18],[-31,2],[-79,21]]];
+const STATION=[[-35,-9],[4,-25],[3,-26],[16,-31],[21,-18],[-31,2],[-33,-4]];
+const PALETTE=[[-23,-54],[28,-77],[23,-88],[19,-87],[5,-115],[9,-117],[4,-127],[-20,-116],[-31,-111],[-36,-107],[-35,-104],[-39,-102],[-37,-97],[-43,-94]];
+const BLDGS=[[[-45,-41],[-29,-49],[-46,-83],[-62,-75]],[[30,-53],[94,-83],[93,-85],[86,-86],[84,-90],[26,-62]],[[21,-139],[25,-135],[36,-144],[32,-148]],[[-41,4],[-32,1],[-31,3],[-37,6],[-32,20],[-25,17],[-24,19],[-34,23]]];
+const POST=[[-120,-48],[-94,-61],[-93,-64],[-101,-79],[-129,-65]];
+const HOTEL=[[3,-170],[22,-184],[5,-206],[-14,-191]];
+const PARKINGS=[[[-63,-32],[-80,-67],[-64,-74],[-47,-40]],[[-84,-87],[-59,-106],[-48,-94],[-69,-77],[-78,-74]],
+  [[31,-52],[93,-82],[104,-74],[138,-84],[141,-71],[117,-62],[37,-31],[21,-28],[18,-36],[30,-41]],[[-307,34],[-293,47],[-319,74],[-333,60]],[[-210,-198],[-213,-227],[-236,-225],[-233,-195]]];
+const PARK=[[-194,146],[-172,126],[-149,117],[-134,97],[-123,91],[-106,95],[-99,114],[-107,146],[-140,171],[-169,177]];
+
+function buildWorld(){
+  const g=world.getContext('2d'),R=rng(778);
+  const mask=document.createElement('canvas');mask.width=WW;mask.height=WH;const mk=mask.getContext('2d');mk.fillStyle=mk.strokeStyle='#000';
+  const F=(c,x,y,w,h)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h);};
+  const tracePoly=(c,pts)=>{c.beginPath();pts.forEach((p,i)=>{const [x,y]=m2p(p[0],p[1]);i?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();};
+  const fillPoly=(pts,col,pad)=>{tracePoly(g,pts);g.fillStyle=col;g.fill();tracePoly(mk,pts);mk.fill();if(pad){mk.lineWidth=pad*2;mk.stroke();}};
+  const tracePath=(c,pts)=>{c.beginPath();pts.forEach((p,i)=>{const [x,y]=m2p(p[0],p[1]);i?c.lineTo(x,y):c.moveTo(x,y);});};
+  const strokeLine=(pts,wid,col,dash)=>{g.save();tracePath(g,pts);g.lineJoin='round';g.lineCap=dash?'butt':'round';g.lineWidth=wid;g.strokeStyle=col;if(dash)g.setLineDash(dash);g.stroke();g.restore();};
+  const maskLine=(pts,wid)=>{tracePath(mk,pts);mk.lineJoin='round';mk.lineCap='round';mk.lineWidth=wid;mk.stroke();};
+  // 地面（住宅地）
+  F('#a89f8a',0,0,WW,WH);for(let i=0;i<14000;i++)F(R()<.5?'#9a927c':'#b4ac98',R()*WW,R()*WH,1,1);
+  // 県道沿いの山（丸子山側の緑）
+  const kp=P.filter(p=>p.sec==='kp');
+  if(kp.length){g.beginPath();kp.forEach((p,i)=>{const o=p.w+26;i?g.lineTo(p.x+p.nx*o,p.y+p.ny*o):g.moveTo(p.x+p.nx*o,p.y+p.ny*o);});
+    for(let i=kp.length-1;i>=0;i--){const p=kp[i],o=p.w+26+120+Math.sin(i*.07)*25;g.lineTo(p.x+p.nx*o,p.y+p.ny*o);}g.closePath();
+    g.fillStyle='#2f6e2a';g.fill();mk.fillStyle='#000';g.save();g.clip();
+    for(let i=0;i<2600;i++){const x=R()*WW,y=R()*WH;F('#23581f',x,y+2,7,5);F(R()<.5?'#3c8a34':'#357a2e',x,y,6,6);F('#58a848',x+1,y+1,2,2);}
+    g.restore();g.beginPath();kp.forEach((p,i)=>{const o=p.w+26;i?g.lineTo(p.x+p.nx*o,p.y+p.ny*o):g.moveTo(p.x+p.nx*o,p.y+p.ny*o);});
+    for(let i=kp.length-1;i>=0;i--){const p=kp[i],o=p.w+26+120+Math.sin(i*.07)*25;g.lineTo(p.x+p.nx*o,p.y+p.ny*o);}g.closePath();mk.beginPath();
+    kp.forEach((p,i)=>{const o=p.w+22;i?mk.lineTo(p.x+p.nx*o,p.y+p.ny*o):mk.moveTo(p.x+p.nx*o,p.y+p.ny*o);});
+    for(let i=kp.length-1;i>=0;i--){const p=kp[i],o=p.w+26+120+Math.sin(i*.07)*25;mk.lineTo(p.x+p.nx*o,p.y+p.ny*o);}mk.closePath();mk.fill();}
+  // 丸子山公園
+  fillPoly(PARK,'#4c9a38',6);for(let i=0;i<60;i++){const q=PARK[(R()*PARK.length)|0];const [x,y]=m2p(q[0]*.7+(-140)*.3,q[1]*.7+130*.3);F('#2c6a28',x+R()*20-10,y+R()*20-10,6,6);}
+  // 線路（JR山陰本線）
+  RAILS.forEach(r=>{strokeLine(r,14,'#8c7c6c');maskLine(r,20);});
+  RAILS.forEach(r=>strokeLine(r,9,'#5c3c20',[1,2]));
+  RAILS.forEach(r=>{strokeLine(r,5,'#c8c8d0');strokeLine(r,3,'#8c7c6c');});
+  PLATFORMS.forEach(p=>{fillPoly(p,'#b0b0b8',2);});
+  // 一般道路（レース中は通行止め）
+  SIDE_ROADS.forEach(r=>{strokeLine(r,24,'#c4bca8');maskLine(r,30);});
+  SIDE_ROADS.forEach(r=>strokeLine(r,17,'#6a6a78'));
+  SIDE_ROADS.slice(0,2).forEach(r=>{strokeLine(r,30,'#c4bca8');strokeLine(r,24,'#6a6a78');strokeLine(r,1.5,'#f0c030');});
+  // 駐車場
+  PARKINGS.forEach(pk=>{fillPoly(pk,'#707080',2);g.save();tracePoly(g,pk);g.clip();for(let x=0;x<WW;x+=7)F('#d8d8e0',x,0,1,WH);g.restore();});
+  // 建物
+  const bshadow=(pts,dx,dy)=>{g.save();g.translate(dx,dy);tracePoly(g,pts);g.fillStyle='rgba(0,0,0,.35)';g.fill();g.restore();};
+  bshadow(STATION,3,3);fillPoly(STATION,'#b8452e',3);g.save();tracePoly(g,STATION);g.clip();for(let x=0;x<WW;x+=3)F('#8c2c1c',x,0,1,WH);g.restore();
+  bshadow(PALETTE,4,4);fillPoly(PALETTE,'#8c4a34',3);g.save();tracePoly(g,PALETTE.map(p=>[p[0]*.9-2,p[1]*.9-9]));g.fillStyle='#c4c8d0';g.fill();g.clip();
+  for(let x=0;x<WW;x+=6)F('#aeb2bc',x,0,1,WH);for(let y=0;y<WH;y+=6)F('#aeb2bc',0,y,WW,1);g.restore();
+  BLDGS.forEach(b=>{bshadow(b,3,3);fillPoly(b,'#a4a4b4',3);});
+  bshadow(POST,3,3);fillPoly(POST,'#9c9cac',3);{const [x,y]=m2p(-111,-64);F('#d82800',x-4,y-4,9,9);F('#f8f8f8',x-2,y-2,5,1);F('#f8f8f8',x-2,y,5,1);F('#f8f8f8',x,y,1,3);}
+  bshadow(HOTEL,12,10);fillPoly(HOTEL,'#f0f0f4',3);g.save();tracePoly(g,HOTEL);g.clip();for(let y=0;y<WH;y+=5)F('#c8ccd8',0,y,WW,1);g.restore();
+  // コース：歩道 → 路面
+  P.forEach(p=>{g.fillStyle='#c8c0b0';g.beginPath();g.arc(p.x,p.y,p.w+11,0,TAU);g.fill();mk.beginPath();mk.arc(p.x,p.y,p.w+14,0,TAU);mk.fill();});
+  P.forEach((p,i)=>{for(let k=0;k<2;k++){const o=(R()*2-1)*(p.w+10);F(R()<.5?'#b8b0a0':'#d4ccbc',p.x+p.nx*o,p.y+p.ny*o,1,1);}});
+  P.forEach(p=>{g.fillStyle=p.s==='g'?'#a4a4b0':'#56566a';g.beginPath();g.arc(p.x,p.y,p.w,0,TAU);g.fill();});
+  P.forEach((p,i)=>{
+    for(let k=0;k<3;k++){const o=(R()*2-1)*(p.w-2);F(p.s==='g'?(R()<.5?'#9898a4':'#b4b4c0'):(R()<.5?'#4a4a5c':'#646478'),p.x+p.nx*o,p.y+p.ny*o,1,1);}
+    if(p.s==='g'&&i%5===0)for(let o=-p.w+2;o<p.w-2;o+=1)F('#9090a0',p.x+p.nx*o,p.y+p.ny*o,1,1);
+  });
+  P.forEach((p,i)=>{
+    for(const sd of[-1,1])F('#e8e8f0',p.x+p.nx*sd*(p.w-3)-1,p.y+p.ny*sd*(p.w-3)-1,2,2);
+    if(p.sec==='r9')F('#f0c030',p.x-1,p.y-1,2,2);
+    else if(p.s==='a'&&(i/5|0)%2)F('#e8e8f0',p.x-.5,p.y-.5,1,1);
+  });
+  // 横断歩道
+  const zebra=(mx,my)=>{const [zx,zy]=m2p(mx,my);let bi=0,bd=1e9;P.forEach((p,i)=>{const d=(p.x-zx)**2+(p.y-zy)**2;if(d<bd){bd=d;bi=i;}});
+    const p=P[bi];g.save();g.translate(p.x,p.y);g.rotate(p.h);g.fillStyle='#e8e8f0';for(let o=-p.w+3;o<p.w-3;o+=4)g.fillRect(o,-6,2,12);g.restore();};
+  zebra(-84,-4);zebra(-90,-70);zebra(-10,-166);zebra(-236,-10);
+  // 電柱・街灯
+  P.forEach((p,i)=>{
+    if((p.sec==='kp'||p.sec==='ak'||p.sec==='r9')&&i%22===0){const o=-(p.w+7),x=p.x+p.nx*o,y=p.y+p.ny*o;F('rgba(0,0,0,.3)',x+1,y+1,6,2);F('#3c3830',x,y,2,2);}
+    if(p.sec==='sd'&&i%16===0)for(const sd of[-1,1]){const o=sd*(p.w+7),x=p.x+p.nx*o,y=p.y+p.ny*o;F('#3c3830',x,y,2,2);F('#f8f0a0',x,y-1,2,1);}
+  });
+  // 観客（バリアの外の歩道）
+  const cols=['#f8f4e8','#fcc43c','#d82800','#3c8cfc','#58c048','#f878b8','#1a1020','#8c5a3c'];
+  P.forEach((p,i)=>{const busy=p.sec==='sd'||(p.sec==='r9'&&i%3!==0)||(p.sec==='kp'&&P[i].k>.01);if(!busy)return;
+    for(const sd of[-1,1]){if(p.sec==='kp'&&sd<0)continue;if(R()<.55){const o=sd*(p.w+5+R()*5);F(cols[(R()*cols.length)|0],p.x+p.nx*o,p.y+p.ny*o,1,2);}}});
+  // バリア（公道の縁石にそって設置）
+  P.forEach((p,i)=>{for(const sd of[-1,1])F((i/4|0)%2?'#f8f8f8':'#d82800',p.x+p.nx*sd*(p.w+1.5)-1.5,p.y+p.ny*sd*(p.w+1.5)-1.5,3,3);});
+  // スタートライン・グリッド
+  const s0=P[0];
+  g.save();g.translate(s0.x,s0.y);g.rotate(s0.h);for(let t=-s0.w+1;t<s0.w-1;t+=2)for(let c=0;c<3;c++){g.fillStyle=((t+100)/2+c)%2<1?'#f8f8f8':'#101018';g.fillRect(t,-3+c*2,2,2);}g.restore();
+  gridSlots().forEach(s=>{g.save();g.translate(s.x,s.y);g.rotate(s.a);g.fillStyle='#f8f8f8';g.fillRect(-5,-7,10,1);g.fillRect(-5,-7,1,4);g.fillRect(4,-7,1,4);g.restore();});
+  // 石州瓦の家並み（空いている場所に配置）
+  const md=mk.getImageData(0,0,WW,WH).data,free=(x,y)=>x>=0&&y>=0&&x<WW&&y<WH&&md[((y|0)*WW+(x|0))*4+3]===0;
+  
+  const house=(x,y,w,h)=>{const r=R(),roof=r<.72?'#b8452e':r<.86?'#6c7080':'#98382a';F('rgba(0,0,0,.35)',x+2,y+2,w,h);F(roof,x,y,w,h);
+    const dark=roof==='#6c7080'?'#50546a':'#8c2c1c',hi=roof==='#6c7080'?'#9aa0b0':'#e8906c';
+    if(w>=h){for(let xx=x+2;xx<x+w-1;xx+=3)F(dark,xx,y,1,h);F(hi,x,y+(h>>1)-1,w,2);}else{for(let yy=y+2;yy<y+h-1;yy+=3)F(dark,x,yy,w,1);F(hi,x+(w>>1)-1,y,2,h);}
+    F(dark,x,y+h-1,w,1);};
+  for(let y=0;y<WH;y+=4)for(let x=(y*7)%11;x<WW;x+=5){
+    const w=16+(R()*10|0),h=14+(R()*8|0);
+    if(!(free(x,y)&&free(x+w,y)&&free(x,y+h)&&free(x+w,y+h)&&free(x+w/2,y+h/2)&&free(x+w/2,y)&&free(x,y+h/2)&&free(x+w,y+h/2)&&free(x+w/2,y+h)))continue;
+    for(let yy=Math.max(0,y-2);yy<Math.min(WH,y+h+3);yy++)for(let xx=Math.max(0,x-2);xx<Math.min(WW,x+w+3);xx++)md[(yy*WW+xx)*4+3]=255;
+    if(R()<.1){F('#4c9a38',x,y,w,h);F('#2c6a28',x+3,y+3,6,6);continue;}
+    house(x,y,w,h);
+  }
+  // 地名
+  g.font='10px "DotGothic16",monospace';g.textBaseline='top';
+  const label=(t,mx,my,col,bg)=>{const [x,y]=m2p(mx,my),w=Math.ceil(g.measureText(t).width);F(bg||'rgba(16,20,44,.8)',x-w/2-3,y-2,w+6,14);g.fillStyle=col||'#f8f4e8';g.fillText(t,x-w/2,y);};
+  label('JR江津駅',-8,-2);label('JR山陰本線',-170,90);label('パレットごうつ',-8,-86);label('江津郵便局',-112,-58);
+  label('スーパーホテル',6,-196);label('国道9号',-165,36,'#f8f8f8','#2c5cc8');label('国道9号',10,-62,'#f8f8f8','#2c5cc8');
+  label('県道江津港線',-120,-160,'#f8f8f8','#2c7a3c');label('あけぼの通り',-270,0,'#f8f8f8','#2c7a3c');label('駅前通り',-100,-30);label('丸子山公園',-140,135);
+  // ミニマップ
+  const m=miniBase.getContext('2d');m.clearRect(0,0,48,56);m.fillStyle='rgba(16,20,44,.7)';m.fillRect(0,0,48,56);
+  m.strokeStyle='#f8f4e8';m.lineWidth=2;m.lineJoin='round';m.beginPath();P.forEach((p,i)=>{const x=MOX+p.x*MS,y=MOY+p.y*MS;i?m.lineTo(x,y):m.moveTo(x,y);});m.closePath();m.stroke();
+  m.fillStyle='#d82800';m.fillRect(MOX+s0.x*MS-2,MOY+s0.y*MS-1,4,2);
+}
+function gridSlots(){const out=[];for(let s=0;s<4;s++){const i=(N-10-(s>>1)*12)%N,p=P[i],lat=(s&1?1:-1)*p.w*.42;out.push({i,x:p.x+p.nx*lat,y:p.y+p.ny*lat,a:p.h,lat});}return out;}
+buildWorld();
+if(document.fonts&&document.fonts.load)document.fonts.load('10px "DotGothic16"').then(buildWorld).catch(()=>{});
+
+/* ================= sound ================= */
+const SFX={ctx:null,on:store.get('gotsu-sound',true),eng:null,eg:null,
+  init(){if(this.ctx){if(this.ctx.state==='suspended')this.ctx.resume();return;}try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){this.ctx=null;}},
+  tone(f,d,type,vol,when){if(!this.ctx||!this.on)return;const t=this.ctx.currentTime+(when||0),o=this.ctx.createOscillator(),g=this.ctx.createGain();
+    o.type=type||'square';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(vol||.06,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(this.ctx.destination);o.start(t);o.stop(t+d+.02);},
+  seq(notes){let w=0;notes.forEach(([f,d])=>{if(f)this.tone(f,d*.95,'square',.06,w);w+=d;});},
+  engOn(){if(!this.ctx||this.eng)return;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='square';o.frequency.value=50;g.gain.value=0;o.connect(g).connect(this.ctx.destination);o.start();this.eng=o;this.eg=g;},
+  engSet(v,on){if(!this.eng)return;const t=this.ctx.currentTime;this.eng.frequency.setTargetAtTime(45+v*1.1,t,.05);this.eg.gain.setTargetAtTime(on&&this.on?.02:0,t,.05);},
+  engOff(){if(!this.eng)return;try{this.eng.stop();}catch(e){}this.eng.disconnect();this.eng=null;}
+};
+
+/* ================= input ================= */
+const inp={L:0,R:0,A:0,B:0},keys={L:0,R:0,A:0,B:0},ptr=new Map();
+function sync(){const s={L:keys.L,R:keys.R,A:keys.A,B:keys.B};ptr.forEach(k=>{if(k)s[k]=1;});Object.assign(inp,s);
+  $('kL').classList.toggle('on',!!s.L);$('kR').classList.toggle('on',!!s.R);$('kA').classList.toggle('on',!!s.A);$('kB').classList.toggle('on',!!s.B);}
+function bindZone(el,a,b){
+  const zone=e=>{const r=el.getBoundingClientRect();return e.clientX<r.left+r.width/2?a:b;};
+  el.addEventListener('pointerdown',e=>{e.preventDefault();SFX.init();try{el.setPointerCapture(e.pointerId);}catch(_){}ptr.set(e.pointerId,zone(e));sync();});
+  el.addEventListener('pointermove',e=>{if(ptr.has(e.pointerId)){ptr.set(e.pointerId,zone(e));sync();}});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,e=>{if(ptr.delete(e.pointerId))sync();}));
+}
+bindZone($('dpad'),'L','R');bindZone($('ab'),'B','A');
+$('pad').addEventListener('contextmenu',e=>e.preventDefault());
+const KMAP={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'A',KeyZ:'A',Space:'A',ArrowDown:'B',KeyX:'B'};
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=KMAP[e.code];if(k){keys[k]=1;sync();if(state==='race')e.preventDefault();}
+  if(e.code==='Escape'||e.code==='KeyP'){if(state==='race'&&!paused)pause();else if(paused)resume();}});
+addEventListener('keyup',e=>{const k=KMAP[e.code];if(k){keys[k]=0;sync();}});
+addEventListener('blur',()=>{keys.L=keys.R=keys.A=keys.B=0;ptr.clear();sync();});
+
+/* ================= race ================= */
+let state='title',paused=false,race=null,selIdx=store.get('gotsu-chara',0)|0,autoAcc=!!store.get('gotsu-auto',false),particles=[];
+const cam={x:0,y:0};
+function makeKart(ch,isP,slot){const g=gridSlots()[slot],i=g.i,lat=g.lat;
+  return{ch,isP,x:g.x,y:g.y,a:g.a,v:0,idx:i,prog:i-N,laps:-1,lapStart:0,lapTimes:[],fin:false,finT:0,place:0,
+    skill:.9+Math.random()*.07,seed:Math.random()*10,lat,st:0,off:false,wrong:0};}
+function startRace(ci,demo){
+  const others=CHARAS.filter((c,i)=>i!==ci).sort(()=>Math.random()-.5);
+  race={t:demo?0:-3.6,demo,karts:[],finCount:0,doneT:0,lastN:4,player:null,lastLap:''};
+  others.forEach((c,i)=>race.karts.push(makeKart(c,false,i)));
+  if(!demo){race.player=makeKart(CHARAS[ci],true,3);race.karts.push(race.player);}
+  mg.clearRect(0,0,WW,WH);particles=[];
+  const f=focus();cam.x=clamp(f.x-VW/2,0,WW-VW);cam.y=clamp(f.y-VH/2,0,WH-VH);
+}
+function focus(){if(race.player)return race.player;let b=race.karts[0];race.karts.forEach(k=>{if(k.prog>b.prog)b=k;});return b;}
+function ranking(){return race.karts.slice().sort((a,b)=>(a.fin&&b.fin)?a.finT-b.finT:a.fin?-1:b.fin?1:b.prog-a.prog);}
+
+function step(dt){
+  if(race.t<0){race.t+=dt;const n=Math.ceil(-race.t);
+    if(n!==race.lastN&&n<=3&&n>=1){race.lastN=n;flash(String(n),.9);SFX.tone(440,.18);}
+    if(race.t>=0){flash('GO!',.9);SFX.tone(880,.5);SFX.engOn();}
+    return;}
+  race.t+=dt;
+  for(const k of race.karts)drive(k,dt);
+  const ks=race.karts;
+  for(let i=0;i<ks.length;i++)for(let j=i+1;j<ks.length;j++){const a=ks[i],b=ks[j],dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
+    if(d2<64&&d2>1e-4){const d=Math.sqrt(d2),push=(8-d)/2,ux=dx/d,uy=dy/d;a.x-=ux*push;a.y-=uy*push;b.x+=ux*push;b.y+=uy*push;a.v*=.992;b.v*=.992;}}
+  for(const k of ks)progress(k);
+  if(race.player&&race.player.fin&&state==='race'&&race.t-race.doneT>2.4)showResult();
+}
+function drive(k,dt){
+  const c=k.ch;let thr=0,br=0,st=0;
+  if(k.isP&&!k.fin){thr=(inp.A||(autoAcc&&!inp.B))?1:0;br=inp.B?1:0;st=(inp.R?1:0)-(inp.L?1:0);}
+  else{
+    const t=P[(k.idx+8+Math.floor(k.v/10))%N],off=k.isP?0:clamp(k.lat*.5+Math.sin(race.t*.4+k.seed)*4,-(t.w-8),t.w-8);
+    const want=Math.atan2(t.x+t.nx*off-k.x,-(t.y+t.ny*off-k.y));st=clamp(wrapA(want-k.a)*4,-1,1);
+    const tgt=Math.min(c.vmax*(k.fin?.6:k.skill),c.grip*P[k.idx].ra*.95);thr=k.v<tgt?1:0;br=k.v>tgt+8?1:0;
+  }
+  k.st=st;
+  const vcap=c.vmax;
+  if(thr&&k.v<vcap)k.v=Math.min(vcap,k.v+c.acc*(1-.5*(k.v/vcap)**2)*dt);
+  if(br)k.v-=c.acc*2.4*dt;
+  if(!thr&&!br)k.v-=22*dt;
+  if(k.v>vcap)k.v=Math.max(vcap,k.v-160*dt);
+  k.v=Math.max(0,k.v);
+  k.a=wrapA(k.a+st*c.grip*clamp(k.v/35,0,1)*(br?1.15:1)*dt);
+  k.x+=Math.sin(k.a)*k.v*dt;k.y-=Math.cos(k.a)*k.v*dt;
+  const [j,d]=nearest(k.x,k.y,k.idx);k.idx=j;
+  const WL=wallOf(j);
+  if(d>WL){const p=P[j],ux=(k.x-p.x)/d,uy=(k.y-p.y)/d;k.x=p.x+ux*WL;k.y=p.y+uy*WL;
+    const out=Math.max(0,Math.sin(k.a)*ux-Math.cos(k.a)*uy);
+    if(out>.05&&k.v>30&&Math.random()<.5)particles.push({x:k.x+ux*4,y:k.y+uy*4,vx:(Math.random()-.5)*40-ux*20,vy:(Math.random()-.5)*40-uy*20,life:.3,c:Math.random()<.5?'#fcc43c':'#f8f4e8'});
+    if(!k.wall){k.v*=1-.5*out;if(k.isP&&out>.15)SFX.tone(90,.12,'square',.07);}
+    k.v=Math.max(0,k.v-60*out*dt);k.a=wrapA(k.a+wrapA(p.h-k.a)*.05);k.wall=true;}
+  else k.wall=false;
+  // effects
+  const rx=k.x-Math.sin(k.a)*5,ry=k.y+Math.cos(k.a)*5;
+  if(Math.abs(st)>0&&k.v>c.vmax*.78){mg.fillStyle='rgba(20,20,28,.18)';mg.fillRect(Math.round(rx+Math.cos(k.a)*3),Math.round(ry+Math.sin(k.a)*3),1,1);mg.fillRect(Math.round(rx-Math.cos(k.a)*3),Math.round(ry-Math.sin(k.a)*3),1,1);}
+  if(k.isP){k.wrong=(Math.cos(wrapA(k.a-P[j].h))<-.3&&k.v>15)?k.wrong+dt:0;}
+}
+function progress(k){
+  let dl=k.idx-((k.prog%N)+N)%N;if(dl>N/2)dl-=N;if(dl<-N/2)dl+=N;k.prog+=dl;
+  const comp=Math.floor(k.prog/N);
+  if(comp>k.laps){k.laps=comp;
+    if(comp>=1&&!race.demo){const lt=race.t-k.lapStart;k.lapTimes.push(lt);k.lapStart=race.t;
+      if(k.isP&&comp<LAPS){race.lastLap='LAP '+fmt(lt*1000);SFX.seq([[660,.08],[880,.08],[1100,.14]]);if(comp===LAPS-1)flash('FINAL LAP!',1.4,true);}}
+    if(comp>=LAPS&&!k.fin&&!race.demo){k.fin=true;k.finT=race.t;k.place=++race.finCount;
+      if(k.isP){race.doneT=race.t;flash('FINISH!',2.2);SFX.seq([[523,.12],[659,.12],[784,.12],[1047,.3],[0,.06],[784,.1],[1047,.4]]);}}
+  }
+}
+
+/* ================= render ================= */
+const RAIL_PTS=RAILS[0].map(p=>m2p(p[0],p[1]));let RAIL_LEN=0;const RAIL_CUM=[0];for(let i=1;i<RAIL_PTS.length;i++){RAIL_LEN+=Math.hypot(RAIL_PTS[i][0]-RAIL_PTS[i-1][0],RAIL_PTS[i][1]-RAIL_PTS[i-1][1]);RAIL_CUM.push(RAIL_LEN);}
+function railAt(s){if(s<0||s>RAIL_LEN)return null;let i=1;while(i<RAIL_CUM.length-1&&RAIL_CUM[i]<s)i++;const a=RAIL_PTS[i-1],b=RAIL_PTS[i],t=(s-RAIL_CUM[i-1])/(RAIL_CUM[i]-RAIL_CUM[i-1]||1);
+  return{x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,a:Math.atan2(b[1]-a[1],b[0]-a[0])};}
+const cv=$('cv'),ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
+const mini=$('mini'),mctx=mini.getContext('2d');
+function updCam(d){const k=focus(),tx=clamp(k.x+Math.sin(k.a)*24-VW/2,0,WW-VW),ty=clamp(k.y-Math.cos(k.a)*40-VH/2,0,WH-VH),f=1-Math.exp(-6*d);cam.x+=(tx-cam.x)*f;cam.y+=(ty-cam.y)*f;}
+function render(time,d){
+  const cx=Math.round(cam.x),cy=Math.round(cam.y);
+  ctx.drawImage(world,-cx,-cy);ctx.drawImage(marks,-cx,-cy);
+  // 山陰本線を走る列車
+  {const s=((time*26)%(RAIL_LEN+300))-150;for(let c=0;c<2;c++){const q=railAt(s-c*48);if(!q)continue;const x=q.x-cx,y=q.y-cy;if(x<-40||y<-40||x>VW+40||y>VH+40)continue;
+    ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.rotate(q.a);ctx.fillStyle='#101018';ctx.fillRect(-23,-6,46,12);ctx.fillStyle='#f0ece0';ctx.fillRect(-22,-5,44,10);
+    ctx.fillStyle='#c83028';ctx.fillRect(-22,-1,44,2);ctx.fillStyle='#34507c';for(let w=-19;w<19;w+=6)ctx.fillRect(w,-4,3,2);ctx.restore();}}
+  // particles
+  particles=particles.filter(p=>(p.life-=d)>0);
+  particles.forEach(p=>{p.x+=p.vx*d;p.y+=p.vy*d;ctx.fillStyle=p.c;ctx.globalAlpha=p.life*2>1?1:p.life*2;ctx.fillRect(Math.round(p.x-cx),Math.round(p.y-cy),2,2);});
+  ctx.globalAlpha=1;
+  // karts
+  race.karts.slice().sort((a,b)=>a.y-b.y).forEach(k=>{
+    const di=((Math.round(k.a/TAU*32)%32)+32)%32,s=SPR[k.ch.id],x=Math.round(k.x-cx)-9,y=Math.round(k.y-cy)-9;
+    ctx.drawImage(s.sh[di],x+1,y+2);ctx.drawImage(s.spr[di],x,y);
+    if(k.isP&&!race.demo){ctx.fillStyle='#fcc43c';ctx.fillRect(x+7,y-4,5,1);ctx.fillRect(x+8,y-3,3,1);ctx.fillRect(x+9,y-2,1,1);}
+  });
+  // minimap
+  if(!race.demo){mctx.clearRect(0,0,48,56);mctx.drawImage(miniBase,0,0);
+    race.karts.forEach(k=>{if(k.isP)return;mctx.fillStyle=k.ch.body;mctx.fillRect(Math.round(MOX+k.x*MS)-1,Math.round(MOY+k.y*MS)-1,3,3);});
+    const p=race.player;if(p){mctx.fillStyle='#fcc43c';mctx.fillRect(Math.round(MOX+p.x*MS)-2,Math.round(MOY+p.y*MS)-2,4,4);}}
+}
+const hudCache={};
+const setT=(id,s)=>{if(hudCache[id]!==s){hudCache[id]=s;$(id).textContent=s;}};
+function hud(){
+  const show=!race.demo&&(state==='race'||state==='result');
+  if($('hud').hidden===show)$('hud').hidden=!show;
+  if(!show)return;
+  const p=race.player,lap=clamp(p.laps+1,1,LAPS);
+  setT('hLap','LAP '+lap+'/'+LAPS);
+  const pos=p.fin?p.place:ranking().indexOf(p)+1;
+  if(hudCache.pos!==pos){hudCache.pos=pos;$('hPos').innerHTML=pos+'<small>位</small>';}
+  setT('hTime',fmt(Math.max(0,p.fin?p.finT:race.t)*1000));
+  setT('hLast',race.lastLap);
+  setT('hSpd',Math.round(p.v*.72)+' km/h');
+  if(p.wrong>.8&&!p.fin)flash('ぎゃくそう！',.3,true);
+  SFX.engSet(p.v,state==='race'&&!paused&&race.t>=0);
+}
+let flashT=0;
+function flash(t,dur,small){const f=$('flash');f.textContent=t;f.classList.toggle('small',!!small);f.hidden=false;flashT=dur;}
+
+let last=performance.now(),accT=0;
+function frame(now){
+  let d=(now-last)/1000;last=now;if(d>.1)d=.1;
+  if(!paused){accT+=d;let n=0;while(accT>=DT&&n<30){step(DT);accT-=DT;n++;}}else accT=0;
+  if(flashT>0&&!paused){flashT-=d;if(flashT<=0)$('flash').hidden=true;}
+  updCam(d);render(now/1000,paused?0:d);hud();
+  requestAnimationFrame(frame);
+}
+
+/* ================= leaderboard ================= */
+const Board={mode:'local',rows:[],uid:null,api:null,readonly:false,lastLocal:null,authP:null,
+  loadLocal(){this.rows=store.get('gotsu-local',[]).map(r=>clean(r.id||'l',r)).filter(Boolean);this.draw();},
+  listen(rows){this.rows=rows.map(([id,d])=>clean(id,d)).filter(Boolean);this.draw();},
+  fail(){this.mode='local';this.api=null;this.loadLocal();},
+  async init(){
+    this.loadLocal();
+    const C=window.claude;
+    if(C&&typeof C.use==='function'){if(await this.initClaude(C))return;}
+    if(window.GOTSU_FIREBASE)await this.initFirebase(window.GOTSU_FIREBASE);
+  },
+  // claude.ai の Artifact で開いたとき
+  async initClaude(C){
+    try{
+      const [db,user]=await Promise.all([C.use('db'),C.use('user').catch(()=>null)]);
+      if(!db)return false;
+      if(user){try{this.uid=await user.id();}catch(e){}try{if(await user.can('data.write')===false)this.readonly=true;}catch(e){}}
+      this.mode='shared';this.rows=[];this.draw();
+      this.api={get:async id=>{const s=await db.doc('records/'+id).get();return s.exists?s.data():null;},
+        set:(id,r)=>db.doc('records/'+id).set(r),rename:(id,name)=>db.doc('records/'+id).update({name})};
+      db.collection('records').orderBy('time','asc').limit(100).onSnapshot(s=>this.listen(s.docs.map(d=>[d.id,d.data()])),()=>this.fail());
+      return true;
+    }catch(e){return false;}
+  },
+  // GitHub Pages など一般公開版（Firebase）
+  async initFirebase(cfg){
+    try{
+      const V='https://www.gstatic.com/firebasejs/10.12.2/';
+      const [A,U,F]=await Promise.all([import(V+'firebase-app.js'),import(V+'firebase-auth.js'),import(V+'firebase-firestore.js')]);
+      const app=A.initializeApp(cfg),auth=U.getAuth(app),fs=F.getFirestore(app),ref=id=>F.doc(fs,'records',id);
+      this.mode='shared';this.rows=[];this.draw();
+      this.api={get:async id=>{const s=await F.getDoc(ref(id));return s.exists()?s.data():null;},
+        set:(id,r)=>F.setDoc(ref(id),r),rename:(id,name)=>F.updateDoc(ref(id),{name})};
+      F.onSnapshot(F.query(F.collection(fs,'records'),F.orderBy('time'),F.limit(100)),s=>this.listen(s.docs.map(d=>[d.id,d.data()])),e=>{console.warn(e);this.fail();});
+      this.authP=U.signInAnonymously(auth).then(c=>{this.uid=c.user.uid;this.draw();}).catch(e=>{console.warn(e);this.readonly=true;});
+    }catch(e){console.warn(e);this.fail();}
+  },
+  async submit(rec){
+    if(this.mode==='shared'&&this.api){
+      if(this.authP)await this.authP;
+      if(!this.uid||this.readonly)return{ok:false,msg:'いまは記録を送れません。ページを読みこみ直してからもう一度おしてください。'};
+      try{
+        const cur=await this.api.get(this.uid);
+        if(cur&&typeof cur.time==='number'&&cur.time<=rec.time){
+          if(cur.name!==rec.name)await this.api.rename(this.uid,rec.name);
+          return{ok:true,msg:'あなたのベスト '+fmt(cur.time)+' はやぶれず。ベスト記録をのせたままにしました。'};}
+        await this.api.set(this.uid,rec);return{ok:true,msg:'ランキングにのせました！'};
+      }catch(e){
+        if(e&&(e.code==='invalid_argument'||e.code==='permission-denied')){return{ok:false,msg:'この記録は受けつけられませんでした。'};}
+        return{ok:false,msg:'送信できませんでした。電波のよいところでもう一度おしてください。'};}
+    }
+    const list=store.get('gotsu-local',[]);const id='l'+Date.now();list.push({...rec,id});list.sort((a,b)=>a.time-b.time);store.set('gotsu-local',list.slice(0,20));
+    this.lastLocal=id;this.loadLocal();return{ok:true,msg:'この端末のランキングに記録しました。'};
+  },
+  draw(){
+    document.querySelectorAll('.board').forEach(b=>{
+      b.querySelector('.bmode').textContent=this.mode==='shared'?'1人1記録・ベストタイム':'この端末のみ';
+      b.querySelector('.bnote').textContent=this.mode==='shared'?'記録はこのゲームを遊んだみんなで共有されます。':'この環境では記録はこの端末の中だけに保存されます。';
+      const ol=b.querySelector('.blist');ol.textContent='';
+      if(!this.rows.length){const e=document.createElement('li');e.className='empty';e.textContent='まだ記録がありません。一番乗りをねらおう！';ol.appendChild(e);return;}
+      this.rows.slice(0,50).forEach((r,i)=>{
+        const li=document.createElement('li');if((this.mode==='shared'&&r.id===this.uid)||(this.mode==='local'&&r.id===this.lastLocal))li.className='me';
+        const rk=document.createElement('span');rk.className='r';rk.textContent=(i+1)+'.';
+        const im=document.createElement('img');im.alt=r.chara?r.chara.name:'';if(r.chara)im.src=PORTRAIT_URL[r.chara.id];
+        const nm=document.createElement('span');nm.className='n';nm.textContent=r.name;
+        const tm=document.createElement('span');tm.className='t';tm.textContent=fmt(r.time);
+        li.append(rk,im,nm,tm);ol.appendChild(li);
+      });
+    });
+  }
+};
+function clean(id,d){if(!d||typeof d.time!=='number'||!isFinite(d.time)||d.time<30000||d.time>900000)return null;
+  return{id,name:String(d.name||'???').replace(/[\u0000-\u001f]/g,'').slice(0,10)||'???',time:Math.round(d.time),
+    lap:typeof d.lap==='number'?d.lap:null,chara:CHARAS.find(c=>c.id===d.chara)||null};}
+
+/* ================= screens ================= */
+const SCREENS=['scTitle','scSelect','scResult','scRank','scPause'];
+function show(id){SCREENS.forEach(s=>$(s).hidden=s!==id);if(id){const el=$(id);el.scrollTop=0;}}
+function pause(){if(state!=='race')return;paused=true;SFX.engSet(0,false);show('scPause');}
+function resume(){paused=false;last=performance.now();show(null);}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='race'&&!paused)pause();});
+
+// select cards
+const bars=n=>'■'.repeat(n)+'□'.repeat(5-n);
+CHARAS.forEach((c,i)=>{
+  const b=document.createElement('button');b.type='button';b.className='card';b.id='card-'+c.id;
+  const cvp=document.createElement('canvas');cvp.width=16;cvp.height=16;cvp.getContext('2d').drawImage(PORTRAIT[c.id],0,0);
+  b.innerHTML='<span class="nm"></span><span class="tt"></span><span class="stats"><span>スピード</span><span>'+bars(c.S)+'</span><span>加速</span><span>'+bars(c.A)+'</span><span>コーナー</span><span>'+bars(c.C)+'</span></span>';
+  b.prepend(cvp);b.querySelector('.nm').textContent=c.name;b.querySelector('.tt').textContent=c.title+'｜'+c.type;
+  b.addEventListener('click',()=>{selIdx=i;store.set('gotsu-chara',i);drawSel();SFX.init();SFX.tone(990,.06);});
+  $('cards').appendChild(b);
+});
+function drawSel(){CHARAS.forEach((c,i)=>$('card-'+c.id).setAttribute('aria-pressed',i===selIdx?'true':'false'));$('selDesc').textContent=CHARAS[selIdx].name+'：'+CHARAS[selIdx].desc;}
+selIdx=clamp(selIdx,0,3);drawSel();
+$('autoAcc').checked=autoAcc;$('autoAcc').addEventListener('change',e=>{autoAcc=e.target.checked;store.set('gotsu-auto',autoAcc);});
+
+function toTitle(){state='title';paused=false;SFX.engOff();startRace(-1,true);show('scTitle');}
+function go(){SFX.init();SFX.engOff();state='race';paused=false;startRace(selIdx,false);show(null);$('flash').hidden=true;hudCache.pos=null;}
+function showResult(){
+  state='result';SFX.engSet(0,false);
+  const p=race.player,tot=Math.round(p.finT*1000),best=Math.round(Math.min(...p.lapTimes)*1000);
+  $('rPlace').innerHTML=p.place+'<small>位</small>';$('rChara').textContent=p.ch.name+'（'+p.ch.title+'）';
+  $('rTime').textContent=fmt(tot);$('rLap').textContent=fmt(best);
+  const pb=store.get('gotsu-pb',null);
+  $('pbNote').textContent=(!pb||tot<pb)?'自己ベスト更新！':'自己ベスト '+fmt(pb);if(!pb||tot<pb)store.set('gotsu-pb',tot);
+  race.result={name:'',chara:p.ch.id,time:tot,lap:best,place:p.place,at:Date.now()};
+  $('nick').value=store.get('gotsu-name','');$('sendBtn').disabled=false;$('sendMsg').textContent='';
+  show('scResult');
+}
+$('sendForm').addEventListener('submit',async e=>{
+  e.preventDefault();const name=$('nick').value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,10);
+  if(!name){$('sendMsg').textContent='ニックネームを入れてください。';$('nick').focus();return;}
+  if(!race||!race.result)return;
+  store.set('gotsu-name',name);$('sendBtn').disabled=true;$('sendMsg').textContent='送信中…';
+  const r=await Board.submit({...race.result,name});$('sendMsg').textContent=r.msg;if(!r.ok)$('sendBtn').disabled=false;
+});
+$('goSelect').addEventListener('click',()=>{SFX.init();state='select';show('scSelect');});
+$('goRank').addEventListener('click',()=>{state='rank';show('scRank');});
+$('backTitle1').addEventListener('click',toTitle);$('backTitle2').addEventListener('click',toTitle);
+$('goRace').addEventListener('click',go);$('again').addEventListener('click',go);
+$('toSelect').addEventListener('click',()=>{state='select';SFX.engOff();show('scSelect');});
+$('pauseBtn').addEventListener('click',pause);$('resume').addEventListener('click',resume);
+$('retire').addEventListener('click',toTitle);
+const drawSound=()=>{$('soundBtn').textContent='サウンド：'+(SFX.on?'ON':'OFF');};
+$('soundBtn').addEventListener('click',()=>{SFX.on=!SFX.on;store.set('gotsu-sound',SFX.on);drawSound();SFX.init();if(SFX.on)SFX.tone(880,.08);});
+drawSound();
+
+// fit canvas to stage
+function fit(){const st=$('stage'),w=st.clientWidth,h=st.clientHeight-16;let s=Math.min(w/VW,h/VH);if(s>=2)s=Math.floor(s*4)/4;s=Math.max(s,.5);
+  $('screen').style.width=Math.floor(VW*s)+'px';$('screen').style.height=Math.floor(VH*s)+'px';document.documentElement.style.setProperty('--s',s);}
+addEventListener('resize',fit);fit();
+
+startRace(-1,true);
+Board.init();
+requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame);});
+})();
+</script>
+</body>
+</html>

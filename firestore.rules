@@ -1,0 +1,33 @@
+rules_version = '2';
+// 江津ドットGP ランキング用のルール
+// ・だれでも読める
+// ・書けるのは自分（匿名ログインのID）の記録1件だけ。中身の形と値の範囲をチェック
+// ・削除はできない（管理者は Firebase コンソールから削除）
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /records/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'chara', 'time', 'lap', 'place', 'at'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 10
+        && request.resource.data.chara in ['ren', 'orochi', 'nami', 'midori']
+        && request.resource.data.time is int
+        && request.resource.data.time >= 30000
+        && request.resource.data.time <= 900000
+        && request.resource.data.lap is int
+        && request.resource.data.lap > 0
+        && request.resource.data.lap < request.resource.data.time
+        && request.resource.data.place is int
+        && request.resource.data.place >= 1
+        && request.resource.data.place <= 4
+        && request.resource.data.at is int;
+      allow delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

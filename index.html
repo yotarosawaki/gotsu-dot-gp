@@ -68,6 +68,7 @@ h1 small{display:block;font-size:.36em;color:var(--ink);text-shadow:2px 2px 0 #0
 h2{margin:0;font-weight:400;font-size:24px;color:var(--gold);text-shadow:3px 3px 0 var(--kawara-d);text-wrap:balance}
 .facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;text-align:left;font-size:14px;background:rgba(0,0,0,.35);padding:10px 14px;border:2px solid var(--panel2)}
 .facts dt{color:var(--dim)}.facts dd{margin:0}
+.unofficial{margin:0;font-size:13px;line-height:1.5;color:var(--ink);background:var(--kawara-d);border:2px solid var(--kawara);padding:4px 10px;text-wrap:balance}
 .fine{font-size:11px;color:var(--dim);max-width:34em;line-height:1.6}
 .fine a{color:var(--gold)}
 .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
@@ -167,9 +168,10 @@ h2{margin:0;font-weight:400;font-size:24px;color:var(--gold);text-shadow:3px 3px
 
   <!-- title -->
   <section class="screen see" id="scTitle">
-    <div class="eyebrow">A1市街地グランプリ GOTSU2026 おうえんゲーム</div>
+    <div class="eyebrow">A1市街地グランプリ GOTSU2026 を応援する非公式ゲーム</div>
     <p class="rotate-hint">スマホは横向きにすると遊びやすいよ</p>
     <h1>江津ドットGP<small>GOTSU DOT GRAND PRIX</small></h1>
+    <p class="unofficial">江津市・大会主催者の公式ゲームではありません（非公式の応援ファンゲーム）</p>
     <dl class="facts">
       <dt>決勝</dt><dd>2026年12月13日（日）</dd>
       <dt>コース</dt><dd>JR江津駅前 市街地特設コース</dd>
@@ -181,7 +183,7 @@ h2{margin:0;font-weight:400;font-size:24px;color:var(--gold);text-shadow:3px 3px
       <button class="btn alt" id="goRank" type="button">ランキング</button>
     </div>
     <button class="link" id="soundBtn" type="button">サウンド：ON</button>
-    <p class="fine">非公式の応援ゲームです。コースは2020年大会の市街地コース（パレットごうつ駐車場前スタート）を地図データから再現しました。2026年大会のコースは調整中のため、実際とは異なる場合があります。地図データ © OpenStreetMap contributors。大会情報は <a href="https://a1citygp.com/" target="_blank" rel="noopener">公式サイト</a> へ。</p>
+    <p class="fine">江津市および大会主催者とは関係のない、非公式の応援ゲームです。コースは2020年大会の市街地コース（パレットごうつ駐車場前スタート）を地図データから再現しました。2026年大会のコースは調整中のため、実際とは異なる場合があります。地図データ © OpenStreetMap contributors。大会情報は <a href="https://a1citygp.com/" target="_blank" rel="noopener">公式サイト</a> へ。</p>
   </section>
 
   <!-- select -->
@@ -503,8 +505,77 @@ const SFX={ctx:null,on:store.get('gotsu-sound',true),eng:null,eg:null,
     o.type=type||'square';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(vol||.06,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(this.ctx.destination);o.start(t);o.stop(t+d+.02);},
   seq(notes){let w=0;notes.forEach(([f,d])=>{if(f)this.tone(f,d*.95,'square',.06,w);w+=d;});},
   engOn(){if(!this.ctx||this.eng)return;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='square';o.frequency.value=50;g.gain.value=0;o.connect(g).connect(this.ctx.destination);o.start();this.eng=o;this.eg=g;},
-  engSet(v,on){if(!this.eng)return;const t=this.ctx.currentTime;this.eng.frequency.setTargetAtTime(45+v*1.1,t,.05);this.eg.gain.setTargetAtTime(on&&this.on?.02:0,t,.05);},
+  engSet(v,on){if(!this.eng)return;const t=this.ctx.currentTime;this.eng.frequency.setTargetAtTime(45+v*1.1,t,.05);this.eg.gain.setTargetAtTime(on&&this.on?.012:0,t,.05);},
   engOff(){if(!this.eng)return;try{this.eng.stop();}catch(e){}this.eng.disconnect();this.eng=null;}
+};
+
+
+/* ================= BGM（キャラごとのオリジナル曲・ファミコン風音源） ================= */
+// 旋律は「音名.長さ(16分音符の数)」、- は休符。1小節=16。
+const SONGS={
+  ren:{title:'赤瓦ダッシュ',bpm:160,bass:'oct',roots:['A','F','G','E','A','F','G','E'],
+    lead:['A4.2 C5.2 E5.2 A5.2 G5.2 E5.2 C5.2 E5.2','F5.4 E5.2 C5.2 A4.4 C5.4','B4.2 D5.2 G5.2 B5.2 A5.2 G5.2 D5.2 B4.2','G#5.4 E5.4 B4.4 G#4.2 B4.2',
+          'A5.2 A5.1 A5.1 G5.2 A5.2 C6.4 A5.4','F5.2 A5.2 C6.2 A5.2 G5.4 F5.4','G5.2 G5.2 A5.2 B5.2 D6.4 B5.4','B5.2 G#5.2 E5.2 D5.2 E5.8'],
+    drums:['k.h.s.h.k.k.s.h.','k.h.s.h.k.k.s.h.','k.h.s.h.k.k.s.h.','k.h.s.h.k.s.s.ss']},
+  orochi:{title:'大蛇ばやし',bpm:148,bass:'drone',roots:['D','D','Bb','A','D','D','G','A'],
+    lead:['D5.2 Eb5.2 G5.4 A5.2 G5.2 Eb5.4','D5.2 D5.2 Eb5.2 G5.2 A5.4 Bb5.4','A5.4 G5.2 A5.2 Bb5.4 A5.2 G5.2','Eb5.4 D5.4 A4.8',
+          'D6.4 Bb5.2 A5.2 G5.4 A5.4','Bb5.2 A5.2 G5.2 Eb5.2 D5.4 Eb5.4','G5.2 A5.2 Bb5.2 D6.2 A5.4 G5.4','Eb5.2 D5.2 Eb5.2 G5.2 D5.8'],
+    drums:['T.b.t.b.T.btT.b.','T.b.t.b.T.btT.b.','T.b.t.b.T.btT.b.','T.t.T.t.TtTtTTTT']},
+  nami:{title:'サーフ・ゴーツ',bpm:172,bass:'gallop',roots:['E','E','A','B','E','C#','A','B'],
+    lead:['E5.1 E5.1 B4.1 E5.1 G#5.2 B5.2 G#5.2 E5.2 B4.2 E5.2','G#5.2 F#5.2 E5.2 F#5.2 G#5.4 B5.4','A5.2 C#6.2 A5.2 E5.2 F#5.2 A5.2 C#6.4','B5.2 A5.2 G#5.2 F#5.2 D#5.4 B4.4',
+          'E6.2 B5.2 G#5.2 B5.2 E6.2 B5.2 G#5.4','C#6.2 G#5.2 E5.2 G#5.2 C#6.4 B5.4','A5.2 B5.2 C#6.2 E6.2 C#6.2 B5.2 A5.4','B5.1 B5.1 B5.2 D#6.4 F#6.4 B5.4'],
+    drums:['k.hhs.hhk.hhs.hh','k.hhs.hhk.hhs.hh','k.hhs.hhk.hhs.hh','k.hhs.hhk.s.ssss']},
+  midori:{title:'グリーン・ブースト',bpm:156,bass:'oct',roots:['C','A','F','G','C','A','F','G'],
+    lead:['C5.2 E5.2 G5.2 C6.2 E6.2 C6.2 G5.2 E5.2','A4.2 C5.2 E5.2 A5.2 C6.2 A5.2 E5.2 C5.2','F5.2 A5.2 C6.2 F6.2 E6.4 C6.4','D6.2 B5.2 G5.2 B5.2 D6.4 G6.4',
+          'E6.4 D6.2 C6.2 G5.4 C6.4','C6.2 B5.2 A5.2 E5.2 A5.4 C6.4','F6.2 E6.2 D6.2 C6.2 A5.4 F5.4','G5.2 A5.2 B5.2 D6.2 G6.8'],
+    drums:['k.hhk.hhk.hhk.hs','k.hhk.hhk.hhk.hs','k.hhk.hhk.hhk.hs','k.hhk.hhk.s.ssss']}
+};
+const NOTE_I={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function noteHz(n){const m=/^([A-G])(#|b)?(\d)$/.exec(n);if(!m)return 0;const midi=12*(+m[3]+1)+NOTE_I[m[1]]+(m[2]==='#'?1:m[2]==='b'?-1:0);return 440*Math.pow(2,(midi-69)/12);}
+function compileSong(s){
+  const steps=s.lead.length*16,lead=new Array(steps).fill(null),bass=new Array(steps).fill(null),drum=new Array(steps).fill('.');
+  let p=0;s.lead.forEach((bar,bi)=>{let q=0;bar.trim().split(/\s+/).forEach(tok=>{const [n,d]=tok.split('.');const len=+d||1;if(n!=='-'&&q<16)lead[bi*16+q]={f:noteHz(n),len};q+=len;});
+    if(q!==16)console.warn('bar length',s.title,bi,q);});
+  const B={oct:[[0,2,0],[2,2,1],[4,2,0],[6,2,1],[8,2,0],[10,2,1],[12,2,0],[14,2,1]],gallop:[[0,1,0],[1,1,0],[2,2,0],[4,1,0],[5,1,0],[6,2,0],[8,1,0],[9,1,0],[10,2,0],[12,1,0],[13,1,0],[14,2,1]],
+    drone:[[0,4,0],[4,2,0],[6,2,2],[8,4,0],[12,4,2]]}[s.bass];
+  s.roots.forEach((r,bi)=>{const root=noteHz(r+'2');B.forEach(([st,len,k])=>{bass[bi*16+st]={f:k===1?root*2:k===2?root*1.5:root,len};});});
+  for(let bi=0;bi<s.lead.length;bi++){const pat=s.drums[bi%4===3?3:bi%4];for(let i=0;i<16;i++)drum[bi*16+i]=pat[i]||'.';}
+  return{steps,lead,bass,drum,bpm:s.bpm,title:s.title};
+}
+Object.keys(SONGS).forEach(k=>{SONGS[k].c=compileSong(SONGS[k]);});
+const BGM={id:null,step:0,next:0,timer:null,rate:1,out:null,pulse:null,noise:null,
+  setup(){const a=SFX.ctx;if(!a||this.out)return;this.out=a.createGain();this.out.gain.value=.55;this.out.connect(a.destination);
+    const n=32,re=new Float32Array(n),im=new Float32Array(n);for(let i=1;i<n;i++)im[i]=2/(i*Math.PI)*Math.sin(i*Math.PI*.25);this.pulse=a.createPeriodicWave(re,im);
+    const len=a.sampleRate*.5,b=a.createBuffer(1,len,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;this.noise=b;},
+  play(id,fromStart){
+    if(!SFX.ctx||!SFX.on||!SONGS[id])return;this.setup();
+    if(this.id!==id||fromStart){this.step=0;this.rate=1;}this.id=id;
+    clearInterval(this.timer);this.next=SFX.ctx.currentTime+.06;this.timer=setInterval(()=>this.tick(),25);
+  },
+  stop(){clearInterval(this.timer);this.timer=null;},
+  reset(){this.stop();this.id=null;this.step=0;this.rate=1;},
+  tick(){const a=SFX.ctx,c=SONGS[this.id]&&SONGS[this.id].c;if(!a||!c)return;const sp=60/(c.bpm*this.rate)/4;
+    if(this.next<a.currentTime-.2)this.next=a.currentTime+.02;
+    while(this.next<a.currentTime+.12){const s=this.step;
+      if(c.lead[s])this.tone(this.pulse,c.lead[s].f,this.next,c.lead[s].len*sp*.92,.075);
+      if(c.bass[s])this.tone('triangle',c.bass[s].f,this.next,c.bass[s].len*sp*.85,.2);
+      this.drum(c.drum[s],this.next,this.id);
+      this.next+=sp;this.step=(s+1)%c.steps;}},
+  tone(w,f,t,d,v){const a=SFX.ctx,o=a.createOscillator(),g=a.createGain();if(typeof w==='string')o.type=w;else o.setPeriodicWave(w);
+    o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.006);g.gain.setValueAtTime(v*.8,t+Math.max(.01,d-.03));g.gain.linearRampToValueAtTime(0,t+d);
+    o.connect(g).connect(this.out);o.start(t);o.stop(t+d+.02);},
+  hit(f0,f1,t,d,v,type){const a=SFX.ctx,o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+d);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(this.out);o.start(t);o.stop(t+d+.02);},
+  hiss(t,d,v,ft,fq){const a=SFX.ctx,s=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();s.buffer=this.noise;fl.type=ft;fl.frequency.value=fq;
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(fl).connect(g).connect(this.out);s.start(t);s.stop(t+d+.02);},
+  drum(ch,t){switch(ch){
+    case 'k':this.hit(150,45,t,.14,.5);break;
+    case 's':this.hiss(t,.13,.28,'bandpass',1800);this.hit(220,140,t,.06,.15,'triangle');break;
+    case 'h':this.hiss(t,.03,.12,'highpass',7000);break;
+    case 'o':this.hiss(t,.14,.1,'highpass',6000);break;
+    case 'T':this.hit(95,52,t,.3,.6);break;
+    case 't':this.hit(190,120,t,.12,.3);break;
+    case 'b':this.hit(1760,1740,t,.06,.05,'square');break;}}
 };
 
 /* ================= input ================= */
@@ -555,7 +626,7 @@ function ranking(){return race.karts.slice().sort((a,b)=>(a.fin&&b.fin)?a.finT-b
 function step(dt){
   if(race.t<0){race.t+=dt;const n=Math.ceil(-race.t);
     if(n!==race.lastN&&n<=3&&n>=1){race.lastN=n;flash(String(n),.9);SFX.tone(440,.18);}
-    if(race.t>=0){flash('GO!',.9);SFX.tone(880,.5);SFX.engOn();}
+    if(race.t>=0){flash('GO!',.9);SFX.tone(880,.5);SFX.engOn();if(race.player)BGM.play(race.player.ch.id,true);}
     return;}
   race.t+=dt;
   for(const k of race.karts)drive(k,dt);
@@ -600,7 +671,7 @@ function progress(k){
   const comp=Math.floor(k.prog/N);
   if(comp>k.laps){k.laps=comp;
     if(comp>=1&&!race.demo){const lt=race.t-k.lapStart;k.lapTimes.push(lt);k.lapStart=race.t;
-      if(k.isP&&comp<LAPS){race.lastLap='LAP '+fmt(lt*1000);SFX.seq([[660,.08],[880,.08],[1100,.14]]);if(comp===LAPS-1)flash('FINAL LAP!',1.4,true);}}
+      if(k.isP&&comp<LAPS){race.lastLap='LAP '+fmt(lt*1000);SFX.seq([[660,.08],[880,.08],[1100,.14]]);if(comp===LAPS-1){flash('FINAL LAP!',1.4,true);BGM.rate=1.08;}}}
     if(comp>=LAPS&&!k.fin&&!race.demo){k.fin=true;k.finT=race.t;k.place=++race.finCount;
       if(k.isP){race.doneT=race.t;flash('FINISH!',2.2);SFX.seq([[523,.12],[659,.12],[784,.12],[1047,.3],[0,.06],[784,.1],[1047,.4]]);}}
   }
@@ -741,8 +812,8 @@ function clean(id,d){if(!d||typeof d.time!=='number'||!isFinite(d.time)||d.time<
 /* ================= screens ================= */
 const SCREENS=['scTitle','scSelect','scResult','scRank','scPause'];
 function show(id){SCREENS.forEach(s=>$(s).hidden=s!==id);if(id){const el=$(id);el.scrollTop=0;}}
-function pause(){if(state!=='race')return;paused=true;SFX.engSet(0,false);show('scPause');}
-function resume(){paused=false;last=performance.now();show(null);}
+function pause(){if(state!=='race')return;paused=true;SFX.engSet(0,false);BGM.stop();show('scPause');}
+function resume(){paused=false;last=performance.now();show(null);if(race&&race.player&&race.t>=0&&!race.player.fin)BGM.play(race.player.ch.id);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='race'&&!paused)pause();});
 
 // select cards
@@ -752,17 +823,17 @@ CHARAS.forEach((c,i)=>{
   const cvp=document.createElement('canvas');cvp.width=16;cvp.height=16;cvp.getContext('2d').drawImage(PORTRAIT[c.id],0,0);
   b.innerHTML='<span class="nm"></span><span class="tt"></span><span class="stats"><span>スピード</span><span>'+bars(c.S)+'</span><span>加速</span><span>'+bars(c.A)+'</span><span>コーナー</span><span>'+bars(c.C)+'</span></span>';
   b.prepend(cvp);b.querySelector('.nm').textContent=c.name;b.querySelector('.tt').textContent=c.title+'｜'+c.type;
-  b.addEventListener('click',()=>{selIdx=i;store.set('gotsu-chara',i);drawSel();SFX.init();SFX.tone(990,.06);});
+  b.addEventListener('click',()=>{selIdx=i;store.set('gotsu-chara',i);drawSel();SFX.init();BGM.play(c.id,true);});
   $('cards').appendChild(b);
 });
-function drawSel(){CHARAS.forEach((c,i)=>$('card-'+c.id).setAttribute('aria-pressed',i===selIdx?'true':'false'));$('selDesc').textContent=CHARAS[selIdx].name+'：'+CHARAS[selIdx].desc;}
+function drawSel(){CHARAS.forEach((c,i)=>$('card-'+c.id).setAttribute('aria-pressed',i===selIdx?'true':'false'));$('selDesc').textContent=CHARAS[selIdx].name+'：'+CHARAS[selIdx].desc+'　♪テーマ曲「'+SONGS[CHARAS[selIdx].id].title+'」';}
 selIdx=clamp(selIdx,0,3);drawSel();
 $('autoAcc').checked=autoAcc;$('autoAcc').addEventListener('change',e=>{autoAcc=e.target.checked;store.set('gotsu-auto',autoAcc);});
 
-function toTitle(){state='title';paused=false;SFX.engOff();startRace(-1,true);show('scTitle');}
-function go(){tryLandscape();SFX.init();SFX.engOff();state='race';paused=false;startRace(selIdx,false);show(null);$('flash').hidden=true;hudCache.pos=null;}
+function toTitle(){state='title';paused=false;SFX.engOff();BGM.reset();startRace(-1,true);show('scTitle');}
+function go(){tryLandscape();SFX.init();SFX.engOff();BGM.reset();state='race';paused=false;startRace(selIdx,false);show(null);$('flash').hidden=true;hudCache.pos=null;}
 function showResult(){
-  state='result';SFX.engSet(0,false);
+  state='result';SFX.engSet(0,false);BGM.stop();
   const p=race.player,tot=Math.round(p.finT*1000),best=Math.round(Math.min(...p.lapTimes)*1000);
   $('rPlace').innerHTML=p.place+'<small>位</small>';$('rChara').textContent=p.ch.name+'（'+p.ch.title+'）';
   $('rTime').textContent=fmt(tot);$('rLap').textContent=fmt(best);
@@ -783,11 +854,11 @@ $('goSelect').addEventListener('click',()=>{SFX.init();state='select';show('scSe
 $('goRank').addEventListener('click',()=>{state='rank';show('scRank');});
 $('backTitle1').addEventListener('click',toTitle);$('backTitle2').addEventListener('click',toTitle);
 $('goRace').addEventListener('click',go);$('again').addEventListener('click',go);
-$('toSelect').addEventListener('click',()=>{state='select';SFX.engOff();show('scSelect');});
+$('toSelect').addEventListener('click',()=>{state='select';SFX.engOff();BGM.reset();show('scSelect');});
 $('pauseBtn').addEventListener('click',pause);$('resume').addEventListener('click',resume);
 $('retire').addEventListener('click',toTitle);
 const drawSound=()=>{$('soundBtn').textContent='サウンド：'+(SFX.on?'ON':'OFF');};
-$('soundBtn').addEventListener('click',()=>{SFX.on=!SFX.on;store.set('gotsu-sound',SFX.on);drawSound();SFX.init();if(SFX.on)SFX.tone(880,.08);});
+$('soundBtn').addEventListener('click',()=>{SFX.on=!SFX.on;store.set('gotsu-sound',SFX.on);drawSound();SFX.init();if(SFX.on)SFX.tone(880,.08);else BGM.stop();});
 drawSound();
 
 // fit canvas to stage
